@@ -20,14 +20,15 @@ class TileMap():
         self.map_surface = pygame.Surface((self.map_w, self.map_h))
         self.map_surface.set_colorkey((0, 0, 0))
         self.load_map()
-
+    
     def update(self, camera,player):
         for enemy in self.enemy_list:
             enemy.update(camera, self.tiles,player,self.enemy_list)
 
     def draw_map(self, surface, camera):
         surface.blit(self.map_surface, (0 - camera.offset.x, 0 - camera.offset.y))
-
+        
+    #The enemies are static so they are a part of the map , we are drawing them 
     def draw_enemies(self, surface, camera):
         for enemy in self.enemy_list:
             enemy.draw(surface, camera)
@@ -35,7 +36,7 @@ class TileMap():
     def load_map(self):
         for tile in self.tiles:
             tile.draw(self.map_surface)
-
+    #Reading the elements of the map matrix  from de csv file
     def read_csv(self, filename):
         map = []
         with open(os.path.join(filename)) as data:
@@ -44,6 +45,7 @@ class TileMap():
                 map.append(list(row))
         return map
 
+    #Loading the entire map and creating a matrix(list of lists) of tiles for the collinding events
     def load_tiles(self, filename):
         tiles = []
         enemy_list = []

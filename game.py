@@ -24,10 +24,16 @@ player = Player()
 #Load camera
 camera = Camera(player)
 
+bullet_group = []
+
 #Load the tilemap
 map = TileMap('images/tilemap/tilemap.csv', spritesheet )
 player.position.x, player.position.y = map.start_x, map.start_y
 
+font_score = pygame.font.Font('freesansbold.ttf',32)
+font_gameOver = pygame.font.Font('freesansbold.ttf',72)
+textX = 10
+textY = 10
 #Background
 background_image = pygame.image.load('images/background/background.png')
 background_image_1 = pygame.image.load('images/background/background1.png')
@@ -65,6 +71,10 @@ while running:
                     player.is_jumping = False
             elif event.key == pygame.K_DOWN:
                 player.ATTACKING = False
+    
+   
+    if player.state == 'finished':
+        running = False
 
     #background
     canvas.blit(background_image_1, (0, 0))
@@ -82,7 +92,7 @@ while running:
     #scroll camera
     camera.scroll()
     #update player
-    player.update(dt, map.tiles)
+    player.update(dt, map.tiles, camera,map.enemy_list)
 
     map.update(camera,player)
     

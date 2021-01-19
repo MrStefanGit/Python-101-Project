@@ -23,15 +23,22 @@ class Player(pygame.sprite.Sprite):
         self.position, self.velocity = pygame.math.Vector2(0, 0), pygame.math.Vector2(0, 0)
         self.acceleration = pygame.math.Vector2(0, self.gravity)
         #bullet
+        self.bullet_list = []
+        
         self.score=0
         self.health=5
         self.dead = False
         
+    #If the player isn't dead (finished state ) we are drawing it on the map and its bullet list
     def draw(self, display, camera):
         if self.state != 'finished':
             display.blit(self.image, (self.rect.x - camera.offset.x, self.rect.y - camera.offset.y))
             for bullet in self.bullet_list:
                 bullet.draw(display, camera)
+    #Updating the position and checking if the player's bullets didn't colide with something 
+    def update_bullet_list(self, camera):
+        for bullet in self.bullet_list:
+            bullet.update(self.bullet_list, camera)
 
     def update(self, dt, tiles, camera, enemy_list):
         self.horizontal_movement(dt)
@@ -43,13 +50,25 @@ class Player(pygame.sprite.Sprite):
         self.update_bullet_list(camera)
         self.check_hit(enemy_list)
         self.check_score()
-
+        
+    #All enemies are dead you finished the game
     def check_score(self):
         if self.score == 18:
             self.dead = True
+            
+    def check_hit(self, enemy_list):
+        for enemy in enemy_list:
+            for bullet in enemy.bullet_list:
+                if self.rect.colliderect(bullet):
+                    self.health -=1
+                    enemy.bullet_list.remove(bullet)
+                    bullet.remove()
+        if self.health <= 0:
+            self.dead = True
+            #print('player dead')
 
     def create_bullet(self, tiles, velocity):
-        if self.FACING_LEFT != True:
+        if self.FACING_LEFT != True:#Set the direction of the bullet
             bullet = Bullet(self.rect.x - 2, self.rect.y + 5, tiles, -velocity,"p")
         else:
             bullet = Bullet(self.rect.x + 11, self.rect.y + 5, tiles, velocity,"p")
@@ -115,7 +134,7 @@ class Player(pygame.sprite.Sprite):
                 self.velocity.y = 0
                 self.position.y = tile.rect.bottom + self.rect.h
                 self.rect.bottom = self.position.y
-
+    #Self.state is used mostly for deciding the player's image
     def set_state(self):
         if self.state != 'finished':
             self.state = 'idle'

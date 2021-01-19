@@ -10,13 +10,14 @@ class Spritesheet:
         with open(self.meta_data) as f:
             self.data = json.load(f)
         f.close()
-
+    #Drawing a tile
     def get_sprite(self, x, y, w, h):
         sprite = pygame.Surface((w, h))
         sprite.set_colorkey((0,0,0))
         sprite.blit(self.sprite_sheet,(0, 0),(x, y, w, h))
         return sprite
-
+    
+    #Loading a specific tile look from the texturepack
     def parse_sprite(self, name):
         sprite = self.data['frames'][name]['frame']
         x, y, w, h = sprite["x"], sprite["y"], sprite["w"], sprite["h"]
