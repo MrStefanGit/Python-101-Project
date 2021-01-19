@@ -1,105 +1,106 @@
-#!/usr/bin/env python3
 
-import pygame
-from pygame.locals import *
+from tiles import *
+from spritesheet import Spritesheet
+from player import Player
+from camera import *
+from bullet import *
+from enemy import *
 
-BLACK = (0, 0, 0)
-GREEN = (0, 255, 0)
-YELLOW = (255, 204, 0)
-RED = (155, 0, 0)
+#Load a basic window
+pygame.init()
+WINDOW_SIZE = [720, 480]
+DISPLAY_W, DISPLAY_H = 720, 480
+canvas = pygame.Surface((WINDOW_SIZE[0] / 3, WINDOW_SIZE[1] / 3))
+window = pygame.display.set_mode(((DISPLAY_W, DISPLAY_H)))
+running = True
+clock = pygame.time.Clock()
+TARGET_FPS = 60
+dead=False
+pygame.mouse.set_visible(False)
+#Load player and spritesheet
+spritesheet = Spritesheet('images/tileset/tileset.png')
+player = Player()
 
-WIDTH = 1000
-HEIGHT = 1000
+#Load camera
+camera = Camera(player)
 
-class GameObject:
-    def __init__(self, game, position, velocity):
-        self.game = game
-        self.position = position
-        self.velocity = velocity
-        self.max_velocity = 5
+#Load the tilemap
+map = TileMap('images/tilemap/tilemap.csv', spritesheet )
+player.position.x, player.position.y = map.start_x, map.start_y
 
-class Smiley(GameObject):
-    def __init__(self, game, position, velocity):
-        super().__init__(game, position, velocity)
+#Background
+background_image = pygame.image.load('images/background/background.png')
+background_image_1 = pygame.image.load('images/background/background1.png')
+foreground_image = pygame.image.load('images/background/foreground.png')
+foreground_image_1 = pygame.image.load('images/background/foreground1.png')
+#Game Loop
+def showscore(x,y,font,player,display):
+    score=font.render("Score:"+str(player.score),True,(0,255,0))
+    display.blit(score,(x,y))
+while running:
+    #delta time
+    dt = clock.tick(60) * .001 * TARGET_FPS
+    #check for player input
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                player.LEFT_KEY = True
+            elif event.key == pygame.K_RIGHT:
+                player.RIGHT_KEY = True
+            elif event.key == pygame.K_SPACE:
+                player.jump()
+            elif event.key == pygame.K_DOWN:
+                player.ATTACKING = True
+                player.create_bullet(map.tiles,2)
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                player.LEFT_KEY = False
+            elif event.key == pygame.K_RIGHT:
+                player.RIGHT_KEY = False
+            elif event.key == pygame.K_SPACE:
+                if player.is_jumping:
+                    player.velocity.y *= .25
+                    player.is_jumping = False
+            elif event.key == pygame.K_DOWN:
+                player.ATTACKING = False
 
-    def input(self, events):
-        for event in events:
-            if event.type == KEYDOWN:
-                if event.key == K_a:
-                    self.velocity[0] = -self.max_velocity
-                if event.key == K_d:
-                    self.velocity[0] = self.max_velocity
-            if event.type == KEYUP:
-                if event.key == K_a:
-                    self.velocity[0] = 0
-                if event.key == K_d:
-                    self.velocity[0] = 0
+    #background
+    canvas.blit(background_image_1, (0, 0))
+    canvas.blit(background_image, (0, 0))
+    canvas.blit(foreground_image_1, (0, 0))
+    canvas.blit(foreground_image, (0, 0))
 
-
-    def update(self):
-        self.position[0] += self.velocity[0]
-        self.position[1] += self.velocity[1]
-
-        if self.position[0] < 0:
-            self.position[0] = WIDTH
-        if self.position[0] > WIDTH:
-            self.position[0] = 0
-
-        if self.position[1] < 0:
-            self.position[1] = HEIGHT
-        if self.position[1] > HEIGHT:
-            self.position[1] = 0
-
-    def draw(self):
-        size = 128
-        eye_position = size // 2
-        eye_size = size // 8
-        center = [int(self.position[0]), int(self.position[1])]
-        pygame.draw.circle(self.game.window, YELLOW, center, size)
-        pygame.draw.circle(self.game.window, BLACK, [center[0] - eye_position, center[1] - eye_position], eye_size)
-        pygame.draw.circle(self.game.window, BLACK, [center[0] + eye_position, center[1] - eye_position], eye_size)
-        
-        pygame.draw.ellipse(self.game.window, BLACK, [center[0], center[1], 110, 64])
+    #draw map
     
+    map.draw_enemies(canvas,  camera)
+    map.draw_map(canvas, camera)
+    
+    #draw player
+    player.draw(canvas, camera)
+    #scroll camera
+    camera.scroll()
+    #update player
+    player.update(dt, map.tiles)
 
-class Game:
-    def __init__(self):
-        self.window = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption("My first game")
-
-        self.gameObjects = []
-
-        self.gameObjects += [Smiley(self, [400, 400], [0, 0])]
-        self.gameObjects += [Smiley(self, [800, 400], [0, 0])]
-        self.gameObjects += [Smiley(self, [400, 800], [0, 0])]
-
-    def input(self):
-        events = pygame.event.get()
-        for obj in self.gameObjects:
-            obj.input(events)
-
-    def update(self):
-        for obj in self.gameObjects:
-            obj.update()
-
-    def draw(self):
-        self.window.fill(BLACK)
-
-        for obj in self.gameObjects:
-            obj.draw()
-
-        # Poate aparea la examen
-        pygame.display.update()
-
-        pygame.time.Clock().tick(30)
-
-    def run(self):
-        while True:
-            self.input()
-            self.update()
-            self.draw()
-
-
-if __name__ == "__main__":
-    game = Game()
-    game.run()
+    map.update(camera,player)
+    
+    #scale canvas & display it
+    scaled_canvas = pygame.transform.scale(canvas, WINDOW_SIZE)
+    #Show score
+    showscore(textX,textY,font_score,player,scaled_canvas)
+    
+    window.blit(scaled_canvas, (0,0))
+    #Ending text
+    if dead:
+        pygame.time.wait(5000)
+        running=False
+    if player.state == "finished":
+        score=font_gameOver.render("Game Over",True,(255,255,255))
+        window.blit(score,(130,100))
+        score=font_gameOver.render("Your Score : "+str(player.score),True,(255,255,255))
+        window.blit(score,(90,160))
+        dead=True
+        
+    pygame.display.update()
