@@ -6,6 +6,7 @@ from pygame.locals import *
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 YELLOW = (255, 204, 0)
+RED = (155, 0, 0)
 
 WIDTH = 1000
 HEIGHT = 1000
